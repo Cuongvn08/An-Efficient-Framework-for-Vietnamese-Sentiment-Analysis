@@ -35,6 +35,10 @@ Please cite our paper if VietnameseSentimentFramework is used:
 If this implementation is useful, please cite or acknowledge this repository on your work.
 
 ## Contact
-Cuong Nguyen (cuong.vn08@gmail.com),
+Cuong V. Nguyen (cuong.vn08@gmail.com),
+
+Khiem H. Le (lehuykhiem28011999@gmail.com),
+
+Anh M. Tran (trminhanh115@gmail.com),
 
 Binh T.Nguyen (ngtbinh@hcmus.edu.vn)
