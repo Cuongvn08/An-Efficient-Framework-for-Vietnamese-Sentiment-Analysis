@@ -1,9 +1,30 @@
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.nn import functional as F
 
 from model.rnn_classifier import EncoderRNN
+
+
+class LayerNormalization(nn.Module):
+    def __init__(self, d_hid, eps=1e-5):
+        super(LayerNormalization, self).__init__()
+
+        self.eps = eps
+        self.a_2 = nn.Parameter(torch.ones(d_hid), requires_grad=True)
+        self.b_2 = nn.Parameter(torch.zeros(d_hid), requires_grad=True)
+
+    def forward(self, z):
+        if z.size(1) == 1:
+            return z
+
+        mu = torch.mean(z, keepdim=True, dim=-1)
+        sigma = torch.std(z, keepdim=True, dim=-1)
+        ln_out = (z - mu.expand_as(z)) / (sigma.expand_as(z) + self.eps)
+        ln_out = ln_out * self.a_2.expand_as(ln_out) + self.b_2.expand_as(ln_out)
+
+        return ln_out
 
 
 class RCNNTextClassifier(nn.Module):
@@ -46,51 +67,24 @@ class RCNNTextClassifier(nn.Module):
                                   update_embedding=update_embedding)
 
         self.W2 = nn.Linear(2 * hidden_size + embedding_size, hidden_size)
+        self.batch_norm = torch.nn.BatchNorm1d(hidden_size)
         self.predictor = nn.Linear(hidden_size, n_label)
 
     def forward(self, seq, lengths):
         embeded = self.embedding(seq)  # embeded.shape=(batch_size, num_sequences, embedding_size)
-        #print('embeded', embeded.shape)
 
         output, _ = self.encoder(seq, lengths) # output.shape=(batch, num_sequences, 2 * embedding_size)
         fw = output[:, :, :self.hidden_size]
-        #print('fw', fw.shape)
 
         bw = output[:, :, self.hidden_size:]
-        #print('bw', bw.shape)
 
         x = torch.cat((fw, embeded, bw), 2)  # equation(3)
-        #print('x cat', x.shape)
 
-        y2 = F.tanh(self.W2(x))
-        #print('y2 tanh', y2.shape)
-
+        y2 = self.W2(x)
         y2 = y2.permute(0, 2, 1)
-        #print('y2 permute', y2.shape)
-
-        y3 = F.max_pool1d(y2, y2.size(2))
-        #print('y3 max_pool1d', y3.shape)
-
-        y3 = y3.squeeze(2)
-        #print('y3 squeeze', y3.shape)
+        y2 = F.tanh(y2)
+        y3 = F.max_pool1d(y2, y2.size(2)).squeeze(2)
 
         out = self.predictor(y3)
-        #print('out predictor', out.shape)
-
-        '''
-        embeded torch.Size([512, 152, 300])
-        fw torch.Size([512, 152, 200])
-        bw torch.Size([512, 152, 200])
-
-        x cat torch.Size([512, 152, 700])
-
-        y2 tanh torch.Size([512, 152, 200])
-
-        y2 permute torch.Size([512, 200, 152])
-        y3 max_pool1d torch.Size([512, 200, 1])
-
-        y3 squeeze torch.Size([512, 200])
-        out predictor torch.Size([512, 2])
-        '''
 
         return out
