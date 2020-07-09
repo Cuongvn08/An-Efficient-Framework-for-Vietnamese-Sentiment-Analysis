@@ -52,3 +52,6 @@ Khiem H. Le (lehuykhiem28011999@gmail.com),
 Anh M. Tran (trminhanh115@gmail.com),
 
 Binh T.Nguyen (ngtbinh@hcmus.edu.vn)
+
+## Copyright
+For any request to use our datasets and source code, please kindly contact authors to avoid any violation to the copyright of all authors and creators of this repository.
